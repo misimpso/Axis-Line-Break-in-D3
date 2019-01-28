@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Axis Break</title>
+        <meta name="description" content="D3 Dynamic Axis Break">
+        <link rel="stylesheet" href="main.css">
+    </head>
+    <body>
+    </body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="moment.js"></script>
+    <script>
+        var margin = {top: 80, right: 80, bottom: 80, left: 80},
+            width = 1000 - margin.left - margin.right,
+            height = 700 - margin.top - margin.bottom;
+        
+        var xaxis = d3.scaleTime().range([0, width]);
+        var yaxis = d3.scaleLinear().range([height - 30, 0]);
+        
+        var data = []
+        for(var i = 0; i < 10; i++) {
+            data.push({"date": new moment().subtract(i, "days").toDate(),
+                      "per": 100 - (Math.random() * 20)})
+        }
+        
+        var lineFunction = d3.line()
+            .x(function(d) { return xaxis(d.date);})
+            .y(function(d) { return yaxis(d.per); });
+        
+        var squiggleFunction = d3.line()
+            .x(function(d) {return d.x; })
+            .y(function(d) {return d.y; });
+        
+        var svg = d3.select("body").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("class", "graph")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        
+        xaxis.domain(d3.extent(data, function(d) {return d.date; }));
+        yaxis.domain(d3.extent(data, function(d) {return d.per; }));
+        
+        // Set Y axis domain based
+        var yAxisBreak = yaxis.domain()[0] > 0;
+
+        // Make the y axis squiggle break
+        if (yAxisBreak) {
+            var periods = 4;
+            var gap = (height - yaxis.range()[0])/((periods*4) + 2);
+            var ali = 0.5;
+            var dis = 7;
+            var pth = [ {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0]},
+                        {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0] + gap }];
+
+            // Generate points per num periods
+            for(var i = 0; i < periods; i++) {
+                for(var j= 1; j <= 4; j++) {
+                    pth.push({"x": yaxis.range()[1] + ali + (j % 2 != 0 ? (2 - j) * dis : 0), "y": yaxis.range()[0] + (gap*4*i) + gap*(j+1) });
+                }
+            }
+
+            // Add end straight bit
+            pth.push({"x": yaxis.range()[1] + ali, "y": yaxis.range()[0] + (gap*4*periods) + 2*gap});
+
+            // Draw them points
+            svg.selectAll(".squiggles")
+                .data(pth)
+                .enter().append("path")
+                .attr("d", function(d, i) {
+                    if (i > 0) {
+                        return squiggleFunction([pth[i-1], d]);
+                    }
+                })
+                .attr("stroke", "black")      
+                .attr("stroke-width", 1)
+                .attr("fill", "none");
+        }
+        
+        svg.append("path")
+            .data([data])
+            .attr("class", "line")
+            .attr("d", lineFunction);
+        
+        svg.append("g")
+            .attr("transform", "translate(0, " + height + ")")
+            .attr("class", "xaxis")
+            .call(d3.axisBottom(xaxis));
+        
+        svg.append("g")
+            .attr("class", "yaxis")
+            .call(d3.axisLeft(yaxis));
+        
+        if (yAxisBreak) {
+            // Get rid of bottom tick
+            var p = d3.select(".yaxis").select("path").attr("d");
+            var i = p.replace("M-6", "M-0");
+            d3.select(".yaxis").select("path").attr("d", i);
+        }
+        
+    </script>
+</html>
