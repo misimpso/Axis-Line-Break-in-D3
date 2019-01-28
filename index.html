@@ -12,27 +12,41 @@
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="moment.js"></script>
     <script>
+		
+		// Made by Michael Simpson
+		// 01/27/19 -- github.com/misimpso
+		
+		// Set margin, width, and height variables
         var margin = {top: 80, right: 80, bottom: 80, left: 80},
             width = 1000 - margin.left - margin.right,
             height = 700 - margin.top - margin.bottom;
-        
-        var xaxis = d3.scaleTime().range([0, width]);
-        var yaxis = d3.scaleLinear().range([height - 30, 0]);
-        
+			
+		// Make list of dict elements with random percentages and descending days
         var data = []
         for(var i = 0; i < 10; i++) {
             data.push({"date": new moment().subtract(i, "days").toDate(),
-                      "per": 100 - (Math.random() * 20)})
+                       "per": 100 - (Math.random() * 20)})
         }
         
+		// Create x and y axis
+        var xaxis = d3.scaleTime().range([0, width]);
+        var yaxis = d3.scaleLinear().range([height - 30, 0]);
+		
+		// Set axis' domain with min/max info from data
+        xaxis.domain(d3.extent(data, function(d) {return d.date; }));
+        yaxis.domain(d3.extent(data, function(d) {return d.per; }));
+        
+		// Function for drawing data line
         var lineFunction = d3.line()
             .x(function(d) { return xaxis(d.date);})
             .y(function(d) { return yaxis(d.per); });
         
+		// Function for drawing line break
         var squiggleFunction = d3.line()
             .x(function(d) {return d.x; })
             .y(function(d) {return d.y; });
         
+		// Create SVG DOM element, give it height and width, and add meta element for graph
         var svg = d3.select("body").append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
@@ -40,13 +54,21 @@
                 .attr("class", "graph")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         
-        xaxis.domain(d3.extent(data, function(d) {return d.date; }));
-        yaxis.domain(d3.extent(data, function(d) {return d.per; }));
+		
         
-        // Set Y axis domain based
+        // Set Y axis domain based on low end of y axis domain
         var yAxisBreak = yaxis.domain()[0] > 0;
 
-        // Make the y axis squiggle break
+        // Make the y axis squiggle break -- squiggle schema
+		
+		//		    |¯¯¯¯¯¯¯¯¯¯gap¯¯¯¯¯¯¯¯¯¯|
+		// 		  |¯     /\      /\
+		//(ali)gn |  ___/  \    /  \    ____
+		//		  |	    |   \  /|   \  /     |¯
+		//		  |_    |    \/ |    \/      |_ (dis)place
+		//     	        |       |
+ 		//     	        (per)iod|
+		
         if (yAxisBreak) {
             var periods = 4;
             var gap = (height - yaxis.range()[0])/((periods*4) + 2);
@@ -55,7 +77,7 @@
             var pth = [ {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0]},
                         {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0] + gap }];
 
-            // Generate points per num periods
+            // Generate point info based on squiggle parameters and add to list
             for(var i = 0; i < periods; i++) {
                 for(var j= 1; j <= 4; j++) {
                     pth.push({"x": yaxis.range()[1] + ali + (j % 2 != 0 ? (2 - j) * dis : 0), "y": yaxis.range()[0] + (gap*4*i) + gap*(j+1) });
@@ -79,20 +101,24 @@
                 .attr("fill", "none");
         }
         
+		// Draw line graph with data
         svg.append("path")
             .data([data])
             .attr("class", "line")
             .attr("d", lineFunction);
-        
+		
+		// Draw x axis
         svg.append("g")
             .attr("transform", "translate(0, " + height + ")")
             .attr("class", "xaxis")
             .call(d3.axisBottom(xaxis));
         
+		// Drw y axis
         svg.append("g")
             .attr("class", "yaxis")
             .call(d3.axisLeft(yaxis));
-        
+			
+		// SVG Path code for axis drawing adds lip to end of axis, this removes the lip so squiggle fits 
         if (yAxisBreak) {
             // Get rid of bottom tick
             var p = d3.select(".yaxis").select("path").attr("d");
