@@ -60,24 +60,32 @@
         var yAxisBreak = yaxis.domain()[0] > 0;
 
         // Make the y axis squiggle break -- squiggle schema
-		
-		//          |¯¯¯¯¯¯¯¯¯¯gap¯¯¯¯¯¯¯¯¯¯|
+		//                gap
+		//               |  |
 		//        |¯     /\      /\
 		//(ali)gn |  ___/  \    /  \    ____
 		//        |     |   \  /|   \  /     |¯
 		//        |_    |    \/ |    \/      |_ (dis)place
 		//              |       |
- 		//              (per)iod|
+ 		//               (per)iod 
 		
         if (yAxisBreak) {
+            // Number of periods of oscillation
             var periods = 4;
+            
+            // Calc stepping gap taking account for num of periods and end straight bits
             var gap = (height - yaxis.range()[0])/((periods*4) + 2);
+            
+            // Horizontal centerline alignment
             var ali = 0.5;
+            
+            // Amplitude of period
             var dis = 7;
-            var pth = [ {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0]},
-                        {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0] + gap }];
 
             // Generate point info based on squiggle parameters and add to list
+            var pth = [ {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0]},
+                        {"x": yaxis.range()[1] + ali, "y": yaxis.range()[0] + gap }];
+            
             for(var i = 0; i < periods; i++) {
                 for(var j= 1; j <= 4; j++) {
                     pth.push({"x": yaxis.range()[1] + ali + (j % 2 != 0 ? (2 - j) * dis : 0), "y": yaxis.range()[0] + (gap*4*i) + gap*(j+1) });
